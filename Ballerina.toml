@@ -1,0 +1,10 @@
+[package]
+org = "gabilan"
+name = "ticket_booking"
+version = "0.1.0"
+
+[build-options]
+observabilityIncluded = true
+
+[[platform.java11.dependency]]
+path = "./mysql-connector-java-8.0.18.jar"
