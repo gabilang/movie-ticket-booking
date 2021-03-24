@@ -2,38 +2,103 @@ import ballerina/http;
 import ballerinax/mysql;
 // import ballerina/sql;
 import ballerina/log;
+import ballerina/io;
 
 configurable string username  = ?;
 configurable string password  = ?;
-
-type Movie record {|
-    int id;
-    string name;
-|};
 
 
 listener http:Listener ticketBooking = new(9090);
 mysql:Client mysqlClient = check new (user = username, password = password);
 
-service / movies on ticketBooking {
+string name = "";
+string seatNo = "";
+boolean paymentDone = false;
 
-    resource function get movies() returns stream<record{|anydata...;|}, error> {
-        stream<record{|anydata...;|}, error> res = mysqlClient->query("Select * from ticket_booking.Movie");
-        log:printDebug(res.toString());
-        return res;
+service /movies on ticketBooking {
+
+    // resource function get movies() returns stream<record{|anydata...;|}, error> {
+    //     stream<record{|anydata...;|}, error> res = mysqlClient->query("SELECT * FROM ticket_booking.Movie");
+    //     log:printDebug(res.toString());
+    //     return res;
+    // }
+
+    resource function get movies() returns string|error {
+        boolean validation = false;
+        string[] movieNames = [];
+        stream<record{|anydata...;|}, error> res = mysqlClient->query("SELECT * FROM ticket_booking.Movie");
+        log:printInfo(res.toString());
+
+        error? e = res.forEach(function(record {} result) {
+        io:print("Serial No: ", result["id"]);
+        io:println(" Movie: ", result["name"]);
+        movieNames.push(<string>result["name"]);
+        });
+
+        if (e is error) {
+            log:printError("Error occurred while retriving data!");
+        }
+
+        string movieName = io:readln(string `Enter the movie name : `);
+        foreach string val in movieNames {
+        if (val.equalsIgnoreCaseAscii(movieName)) {
+            validation = true;
+        }
+
+        }
+        if (!validation) {
+            log:printError("Invalid movie name");
+            return error error:Retriable("Invalid movie name");
+        } else {
+            return name;
+        }
     }
 
-    // resource function post selectMovie() returns sql:Error? {
-    //     string name = 
-    // }
-}
-
-service / seatAllocation on ticketBooking {
 
 }
 
-service / transactionSomething on ticketBooking {
+service /seatAllocation on ticketBooking {
 
+    resource function get seatNumber() returns string|error {
+        boolean validation = true;
+        string[] seats = [];
+        stream<record{|anydata...;|}, error> res = mysqlClient->query("SELECT * FROM ticket_booking.Seat");
+        log:printInfo(res.toString());
+
+        io:println("Available seats: ");
+        error? e = res.forEach(function(record {} result) {
+        io:println(result["seatNum"]);
+        seats.push(<string>result["seatNum"]);
+        });
+
+        if (e is error) {
+            log:printError("Error occurred while retriving data!");
+        }
+
+        string seat = io:readln(string `Enter an available seat No : `);
+        foreach string val in seats {
+        if (val.equalsIgnoreCaseAscii(seat)) {
+            validation = false;
+        }
+
+        }
+        if (!validation) {
+            log:printError("Invalid seat number");
+            return error error:Retriable("Invalid seat selection");
+        } else {
+            return seatNo;
+        }
+    }
+
+
+}
+
+service /doPayment on ticketBooking {
+
+}
+
+public function main() {
+    
 }
 
 
